@@ -1,22 +1,10 @@
 {
   "stats": {
-    "scanned": 313,
-    "found": 48,
+    "scanned": 312,
+    "found": 47,
     "resolved": 38
   },
   "findings": [
-    {
-      "id": "004",
-      "date": "2026-02-20",
-      "title": "CORS wildcard misconfiguration on context7.com",
-      "severity": "medium",
-      "type": "cors_misconfiguration",
-      "description": "Access-Control-Allow-Origin: * set globally. Any site can make cross-origin requests and read responses. Sensitive API endpoints may be accessible from attacker-controlled pages.",
-      "status": "notified",
-      "notified": true,
-      "days_to_fix": null,
-      "disclosure_url": "https://github.com/upstash/context7/issues/1930"
-    },
     {
       "id": "001",
       "date": "2026-02-19",

@@ -84,13 +84,21 @@ def check_graphql(base_url):
     return None
 
 def check_cors(base_url):
-    """Check for overly permissive CORS."""
+    """
+    Check for dangerous CORS misconfiguration.
+    ACAO: * alone is NOT a vulnerability (credentials can't be sent with wildcard).
+    The real vulnerability is: ACAO reflects arbitrary origin AND ACAC: true together.
+    """
     try:
-        r = requests.options(base_url, headers={**HEADERS, "Origin": "https://evil.com"}, timeout=6)
+        r = requests.get(base_url, headers={**HEADERS, "Origin": "https://evil.com"}, timeout=6)
         acao = r.headers.get("Access-Control-Allow-Origin", "")
-        acac = r.headers.get("Access-Control-Allow-Credentials", "")
-        if acao == "*" or (acao == "https://evil.com" and acac.lower() == "true"):
-            return acao
+        acac = r.headers.get("Access-Control-Allow-Credentials", "").lower()
+        # Only flag if origin is reflected back AND credentials are allowed
+        if acao == "https://evil.com" and acac == "true":
+            return f"reflected origin + ACAC:true — credentials exposed cross-origin"
+        # Also flag null origin with credentials (rare but dangerous)
+        if acao == "null" and acac == "true":
+            return f"null origin + ACAC:true — dangerous"
     except Exception:
         pass
     return None
