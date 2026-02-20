@@ -1,0 +1,11 @@
+# V1B3 Scan Targets
+# Add one URL per line. Lines starting with # are ignored.
+# V1B3 will rotate through these automatically on each cron run.
+#
+# Format: https://target-domain.com
+#
+# Add targets here (submitted via GitHub issues or manually):
+
+# Example targets (replace with real ones):
+# https://example-vibe-app.vercel.app
+# https://another-startup.netlify.app
