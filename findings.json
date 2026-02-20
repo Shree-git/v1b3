@@ -14,7 +14,8 @@
       "description": "Access-Control-Allow-Origin: * set globally. Any site can make cross-origin requests and read responses. Sensitive API endpoints may be accessible from attacker-controlled pages.",
       "status": "notified",
       "notified": true,
-      "days_to_fix": null
+      "days_to_fix": null,
+      "disclosure_url": "https://github.com/upstash/context7/issues/1930"
     },
     {
       "id": "001",

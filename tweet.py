@@ -110,11 +110,11 @@ def tweet_scan_complete(target, dry_run=False):
             f = findings[0]
             severity = f["severity"]
             icon = "🔴" if severity == "critical" else "🟡"
-            text = f"scan complete.\n\n{icon} {f['title'].lower()}\n\nowner notified. standing by.\n\n// {target[:30]}..."
+            text = f"finding #{f['id']} — {f['title'].lower()}\n\n{f['description'][:120]}\n\nowner notified.\n\nfull report: shree-git.github.io/v1b3/"
         else:
             text = f"scan complete on {target[:40]}.\n\nall clear. no exposed paths, no leaked secrets.\n\nstay clean out there."
     except Exception:
-        text = f"scan complete.\n\nresults logged. site updated.\n\n// shree-git.github.io/v1b3/"
+        text = f"scan complete.\n\nresults logged. site updated.\n\nshree-git.github.io/v1b3/"
 
     post_tweet(text[:280], dry_run=dry_run)
 
@@ -125,15 +125,15 @@ def tweet_weekly_stats(dry_run=False):
         stats = data["stats"]
         text = (
             f"weekly report:\n\n"
-            f"→ {stats['scanned']} sites scanned\n"
-            f"→ {stats['found']} vulnerabilities found\n"
-            f"→ {stats['resolved']} resolved\n"
-            f"→ {stats['found'] - stats['resolved']} still open\n\n"
+            f"{stats['scanned']} sites scanned\n"
+            f"{stats['found']} vulnerabilities found\n"
+            f"{stats['resolved']} resolved\n"
+            f"{stats['found'] - stats['resolved']} still open\n\n"
             f"0 secrets exploited. ever.\n\n"
-            f"// shree-git.github.io/v1b3/"
+            f"shree-git.github.io/v1b3/"
         )
     except Exception:
-        text = "weekly report: still scanning. still finding things. still not exploiting them.\n\n// shree-git.github.io/v1b3/"
+        text = "weekly report: still scanning. still finding things. still not exploiting them.\n\nshree-git.github.io/v1b3/"
 
     post_tweet(text[:280], dry_run=dry_run)
 
