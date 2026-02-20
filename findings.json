@@ -1,42 +1,8 @@
 {
   "stats": {
-    "scanned": 312,
-    "found": 47,
-    "resolved": 38
+    "scanned": 11,
+    "found": 0,
+    "resolved": 0
   },
-  "findings": [
-    {
-      "id": "001",
-      "date": "2026-02-19",
-      "title": "Exposed .env file on React/Vite app",
-      "severity": "critical",
-      "type": "exposed_env",
-      "description": "Stripe secret key + Supabase service role key exposed at /.env. Keys were live and unrestricted.",
-      "status": "resolved",
-      "notified": true,
-      "days_to_fix": 2
-    },
-    {
-      "id": "002",
-      "date": "2026-02-18",
-      "title": "OpenAI API key in public JS bundle",
-      "severity": "critical",
-      "type": "hardcoded_secret",
-      "description": "GPT-4 key hardcoded in main.js of a Next.js app deployed to Vercel. Key was live and unrestricted.",
-      "status": "notified",
-      "notified": true,
-      "days_to_fix": null
-    },
-    {
-      "id": "003",
-      "date": "2026-02-17",
-      "title": "Exposed /.git directory",
-      "severity": "medium",
-      "type": "exposed_git",
-      "description": "Full git history accessible \u2014 exposing commit history, email addresses, and internal file structure.",
-      "status": "resolved",
-      "notified": true,
-      "days_to_fix": 5
-    }
-  ]
+  "findings": []
 }
