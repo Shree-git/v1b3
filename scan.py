@@ -48,11 +48,35 @@ SECRET_PATTERNS = [
 
 findings = []
 
-def check_path(base_url, path):
+def get_spa_fingerprint(base_url):
+    """
+    Detect SPA catch-all by hitting a random nonexistent path.
+    If it returns 200 + HTML, this server serves index.html for all paths.
+    Returns the fingerprint text to compare against, or None if not a SPA.
+    """
+    canary = base_url.rstrip('/') + '/v1b3-canary-nonexistent-xyz123456'
+    try:
+        r = requests.get(canary, headers=HEADERS, timeout=8, allow_redirects=True)
+        if r.status_code == 200 and '<!DOCTYPE html' in r.text[:100]:
+            return r.text[:300]  # SPA detected — return fallback fingerprint
+    except Exception:
+        pass
+    return None
+
+def check_path(base_url, path, spa_fp=None):
     url = base_url.rstrip('/') + path
     try:
         r = requests.get(url, headers=HEADERS, timeout=8, allow_redirects=False)
         if r.status_code == 200 and len(r.text) > 10:
+            # SPA false positive: content matches the catch-all fallback
+            if spa_fp and r.text[:300] == spa_fp:
+                return None, None
+            # Reject HTML responses for file paths (env, config, sql, etc.)
+            content_type = r.headers.get('Content-Type', '')
+            if 'html' in content_type and any(path.endswith(ext) for ext in
+               ('.env', '.env.local', '.env.production', '.env.development',
+                '.json', '.js', '.sql', 'HEAD', 'config')):
+                return None, None
             return r.status_code, r.text[:2000]
     except Exception:
         pass
@@ -71,9 +95,14 @@ def scan(target_url):
     base = f"{parsed.scheme}://{parsed.netloc}"
     print(f"\n[V1B3] Scanning: {base}\n{'='*50}")
 
+    # Detect SPA catch-all to avoid false positives
+    spa_fp = get_spa_fingerprint(base)
+    if spa_fp:
+        print(f"[~] SPA detected — using canary filtering to avoid false positives")
+
     # Check sensitive paths
     for path in SENSITIVE_PATHS:
-        status, content = check_path(base, path)
+        status, content = check_path(base, path, spa_fp=spa_fp)
         if status == 200:
             print(f"[!] EXPOSED: {path} (HTTP 200)")
             secrets = scan_for_secrets(content, path)

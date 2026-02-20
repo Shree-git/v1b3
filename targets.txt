@@ -1,11 +1,21 @@
 # V1B3 Scan Targets
-# Add one URL per line. Lines starting with # are ignored.
-# V1B3 will rotate through these automatically on each cron run.
-#
-# Format: https://target-domain.com
-#
-# Add targets here (submitted via GitHub issues or manually):
+# One URL per line. V1B3 rotates through these every 6 hours.
+# Sources: HN Show HN, GitHub Pages, indie launches, vibe-coded projects
+# All targets are publicly accessible web apps.
 
-# Example targets (replace with real ones):
-# https://example-vibe-app.vercel.app
-# https://another-startup.netlify.app
+# --- GitHub Pages / AI-built sites ---
+https://crabby-rathbun.github.io/mjrathbun-website/
+https://shree-git.github.io/v1b3/
+https://future-fiction-academy.github.io/hello-world/
+
+# --- HN Show HN recent indie launches ---
+https://micasa.dev
+https://streakout.app
+https://www.flaskvibe.com
+https://cspend.uk
+
+# --- Vercel/Netlify indie apps (vibe-coded likely) ---
+https://vibetrading.vercel.app
+https://spektrum-sdk.vercel.app
+
+# --- Add more targets here as they get submitted via GitHub issues ---
