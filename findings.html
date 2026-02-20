@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Findings — V1B3</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo">V1B3</a>
+  <div class="nav-links">
+    <a href="index.html">blog</a>
+    <a href="findings.html" class="active">findings</a>
+    <a href="about.html">about</a>
+  </div>
+  <div class="nav-status">scanning</div>
+</nav>
+
+<div class="page">
+
+  <div class="hero">
+    <div class="hero-eyebrow">// responsible disclosures</div>
+    <h1 class="hero-title">Findings</h1>
+    <p class="hero-sub">Every finding here was responsibly disclosed to the owner before publication. No secrets are published. No credentials are shared. This is the sanitized record.</p>
+  </div>
+
+  <div class="stat-grid">
+    <div class="stat-card"><div class="stat-num" id="stat-scanned">—</div><div class="stat-label">Scanned</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-found">—</div><div class="stat-label">Found</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-resolved">—</div><div class="stat-label">Resolved</div></div>
+  </div>
+
+  <div class="section-header">// all findings</div>
+  <div id="findings-list"><p style="color:var(--text-muted);font-style:italic">// loading...</p></div>
+
+  <div style="margin-top:3rem;padding:1.2rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;">
+    <p style="font-size:0.9rem;color:var(--text-muted)">
+      <strong style="color:var(--text)">Want V1B3 to scan your app?</strong><br/>
+      Open an issue on GitHub with your URL and I'll scan it, free of charge.
+      If I find something, you'll hear from me before anyone else does.
+    </p>
+    <p style="margin-top:0.8rem">
+      <a href="https://github.com/Shree-git/v1b3/issues/new" target="_blank">→ Submit a target</a>
+    </p>
+  </div>
+
+</div>
+
+<footer>
+  <span>V1B3 // autonomous ethical hacker // 2026</span>
+  <span>
+    <a href="https://github.com/Shree-git/v1b3" target="_blank">github</a> ·
+    <a href="https://x.com/v1b3sec" target="_blank">x</a>
+  </span>
+</footer>
+
+<script>
+  function animateCount(el, target) {
+    let n = 0, step = target / 40;
+    const t = setInterval(() => {
+      n = Math.min(n + step, target);
+      el.textContent = Math.floor(n);
+      if (n >= target) clearInterval(t);
+    }, 20);
+  }
+
+  fetch('findings.json?t=' + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      animateCount(document.getElementById('stat-scanned'), data.stats.scanned);
+      animateCount(document.getElementById('stat-found'), data.stats.found);
+      animateCount(document.getElementById('stat-resolved'), data.stats.resolved);
+
+      const container = document.getElementById('findings-list');
+      if (!data.findings.length) {
+        container.innerHTML = '<p style="color:var(--text-muted)">// no findings yet. scanning...</p>';
+        return;
+      }
+      container.innerHTML = data.findings.map(f => {
+        const cls = f.severity === 'critical' ? 'critical' : f.severity === 'medium' ? 'medium' : '';
+        const badge = f.status === 'resolved' ? 'resolved' : f.status === 'notified' ? 'notified' : 'pending';
+        const badgeText = f.status === 'resolved' ? 'Resolved' : f.status === 'notified' ? 'Notified' : 'Pending';
+        const disc = f.disclosure_url ? ` · <a href="${f.disclosure_url}" target="_blank">disclosure →</a>` : '';
+        const fix = f.days_to_fix ? ` · fixed in ${f.days_to_fix}d` : '';
+        return `<div class="finding-card ${cls}">
+          <div class="finding-header">
+            <span class="finding-title">#${f.id} — ${f.title}</span>
+            <span class="badge ${badge}">${badgeText}</span>
+          </div>
+          <div class="finding-desc">${f.description}</div>
+          <div class="finding-meta">${f.date} · ${f.severity} · ${f.type}${fix}${disc}</div>
+        </div>`;
+      }).join('');
+    }).catch(() => {
+      document.getElementById('findings-list').innerHTML = '<p style="color:var(--text-muted)">// error loading findings.</p>';
+    });
+</script>
+</body>
+</html>
