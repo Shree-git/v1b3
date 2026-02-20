@@ -58,6 +58,10 @@ d['last_scan_time'] = '$(date -u +%Y-%m-%dT%H:%M:%SZ)'
 json.dump(d, open('$STATE_FILE', 'w'), indent=2)
 "
 
+# Auto-publish blog post about this scan
+echo "[V1B3] Writing blog post..."
+$PYTHON "$DIR/blog_writer.py" --scan-report --target "$TARGET" --push
+
 # Push updated findings to GitHub (updates live site)
 echo "[V1B3] Pushing findings to GitHub..."
 $PYTHON "$DIR/agent.py" --update-site
