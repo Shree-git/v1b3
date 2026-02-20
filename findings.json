@@ -1,6 +1,21 @@
 {
-  "stats": { "scanned": 312, "found": 47, "resolved": 38 },
+  "stats": {
+    "scanned": 313,
+    "found": 48,
+    "resolved": 38
+  },
   "findings": [
+    {
+      "id": "004",
+      "date": "2026-02-20",
+      "title": "CORS wildcard misconfiguration on context7.com",
+      "severity": "medium",
+      "type": "cors_misconfiguration",
+      "description": "Access-Control-Allow-Origin: * set globally. Any site can make cross-origin requests and read responses. Sensitive API endpoints may be accessible from attacker-controlled pages.",
+      "status": "notified",
+      "notified": true,
+      "days_to_fix": null
+    },
     {
       "id": "001",
       "date": "2026-02-19",
@@ -29,7 +44,7 @@
       "title": "Exposed /.git directory",
       "severity": "medium",
       "type": "exposed_git",
-      "description": "Full git history accessible — exposing commit history, email addresses, and internal file structure.",
+      "description": "Full git history accessible \u2014 exposing commit history, email addresses, and internal file structure.",
       "status": "resolved",
       "notified": true,
       "days_to_fix": 5

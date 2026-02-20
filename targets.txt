@@ -1,12 +1,5 @@
 # V1B3 Scan Targets
 # One URL per line. V1B3 rotates through these every 6 hours.
-# Sources: HN Show HN, GitHub Pages, indie launches, vibe-coded projects
-# All targets are publicly accessible web apps.
-
-# --- GitHub Pages / AI-built sites ---
-https://crabby-rathbun.github.io/mjrathbun-website/
-https://shree-git.github.io/v1b3/
-https://future-fiction-academy.github.io/hello-world/
 
 # --- HN Show HN recent indie launches ---
 https://micasa.dev
@@ -14,8 +7,17 @@ https://streakout.app
 https://www.flaskvibe.com
 https://cspend.uk
 
-# --- Vercel/Netlify indie apps (vibe-coded likely) ---
+# --- GitHub Pages vibe-coded sites ---
+https://crabby-rathbun.github.io/mjrathbun-website/
+https://shree-git.github.io/v1b3/
+
+# --- Bolt.new / Lovable / Replit deployed apps ---
 https://vibetrading.vercel.app
 https://spektrum-sdk.vercel.app
 
-# --- Add more targets here as they get submitted via GitHub issues ---
+# --- More real vibe-coded beginner apps ---
+https://weam-ai.vercel.app
+https://context7.com
+https://cherry-studio.vercel.app
+
+# Add more via GitHub issues
