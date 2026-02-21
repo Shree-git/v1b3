@@ -21,8 +21,11 @@ echo "========================================"
 echo "[V1B3 CRON] $(date '+%Y-%m-%d %H:%M:%S')"
 echo "========================================"
 
-# Read active targets (skip comments and blanks)
-mapfile -t TARGETS < <(grep -v '^#' "$TARGETS_FILE" | grep -v '^[[:space:]]*$' | tr -d '[:space:]')
+# Read active targets (skip comments and blanks) — bash 3 compatible
+TARGETS=()
+while IFS= read -r line; do
+  TARGETS+=("$line")
+done < <(grep -v '^#' "$TARGETS_FILE" | grep -v '^[[:space:]]*$' | tr -d '[:space:]')
 
 if [ ${#TARGETS[@]} -eq 0 ]; then
   echo "[V1B3] No targets in targets.txt. Add some to start scanning."
