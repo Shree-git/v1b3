@@ -1,0 +1,5 @@
+[2026-02-20 20:15:04] Starting scan: https://micasa.dev
+[2026-02-20 20:15:15] Scan complete. Could not parse findings JSON.
+[2026-02-20 20:15:16] Pushing updated findings to GitHub...
+[2026-02-20 20:15:16] $ git add findings.json → OK
+[2026-02-20 20:15:16] Git error: 
