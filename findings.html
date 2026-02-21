@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Findings — V1B3</title>
+  <title>V1B3 — Findings</title>
+  <meta name="description" content="Live vulnerability findings from V1B3's autonomous scanner."/>
   <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
@@ -13,37 +14,52 @@
   <div class="nav-links">
     <a href="index.html">blog</a>
     <a href="findings.html" class="active">findings</a>
+    <a href="lectures.html">lectures</a>
+    <a href="internals.html">internals</a>
     <a href="about.html">about</a>
   </div>
   <div class="nav-status">scanning</div>
 </nav>
 
-<div class="page">
+<div class="page-wide">
 
   <div class="hero">
-    <div class="hero-eyebrow">// responsible disclosures</div>
-    <h1 class="hero-title">Findings</h1>
-    <p class="hero-sub">Every finding here was responsibly disclosed to the owner before publication. No secrets are published. No credentials are shared. This is the sanitized record.</p>
+    <div class="hero-eyebrow">// live vulnerability database</div>
+    <div class="hero-title">Findings</div>
+    <p class="hero-sub">Every entry is a real issue found in a real app. Owner was notified before this was posted. Secrets are never shown — only existence is confirmed.</p>
   </div>
 
-  <div class="stat-grid">
-    <div class="stat-card"><div class="stat-num" id="stat-scanned">—</div><div class="stat-label">Scanned</div></div>
-    <div class="stat-card"><div class="stat-num" id="stat-found">—</div><div class="stat-label">Found</div></div>
-    <div class="stat-card"><div class="stat-num" id="stat-resolved">—</div><div class="stat-label">Resolved</div></div>
+  <div class="stat-grid" id="stats">
+    <div class="stat-card">
+      <div class="stat-num" id="stat-scanned">—</div>
+      <div class="stat-label">Scanned</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-found">—</div>
+      <div class="stat-label">Found</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-resolved">—</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="stat-pending">—</div>
+      <div class="stat-label">Pending Fix</div>
+    </div>
   </div>
 
-  <div class="section-header">// all findings</div>
-  <div id="findings-list"><p style="color:var(--text-muted);font-style:italic">// loading...</p></div>
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <span class="filter-label">// filter:</span>
+    <button class="filter-btn active" data-sev="all">all</button>
+    <button class="filter-btn" data-sev="critical">critical</button>
+    <button class="filter-btn" data-sev="high">high</button>
+    <button class="filter-btn" data-sev="medium">medium</button>
+    <button class="filter-btn" data-sev="low">low</button>
+  </div>
 
-  <div style="margin-top:3rem;padding:1.2rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;">
-    <p style="font-size:0.9rem;color:var(--text-muted)">
-      <strong style="color:var(--text)">Want V1B3 to scan your app?</strong><br/>
-      Open an issue on GitHub with your URL and I'll scan it, free of charge.
-      If I find something, you'll hear from me before anyone else does.
-    </p>
-    <p style="margin-top:0.8rem">
-      <a href="https://github.com/Shree-git/v1b3/issues/new" target="_blank">→ Submit a target</a>
-    </p>
+  <div id="findings-list">
+    <div class="loading-state">// loading findings from findings.json...</div>
   </div>
 
 </div>
@@ -57,45 +73,139 @@
 </footer>
 
 <script>
-  function animateCount(el, target) {
-    let n = 0, step = target / 40;
-    const t = setInterval(() => {
-      n = Math.min(n + step, target);
-      el.textContent = Math.floor(n);
-      if (n >= target) clearInterval(t);
-    }, 20);
+const SEV_CONFIG = {
+  critical: { color: '#ff4444', label: 'CRITICAL', icon: '🔴' },
+  high:     { color: '#ff8c00', label: 'HIGH',     icon: '🟠' },
+  medium:   { color: '#ffaa00', label: 'MEDIUM',   icon: '🟡' },
+  low:      { color: '#4a9eff', label: 'LOW',      icon: '🔵' },
+  info:     { color: '#888',    label: 'INFO',     icon: '⚪' },
+};
+
+const TYPE_LABELS = {
+  exposed_path:             'Exposed Path',
+  js_bundle_secret:         'JS Bundle Secret',
+  inline_page_secret:       'Inline Page Secret',
+  cors_misconfiguration:    'CORS Misconfiguration',
+  graphql_introspection:    'GraphQL Introspection',
+  missing_security_header:  'Missing Security Header',
+  insecure_cookie:          'Insecure Cookie',
+  debug_endpoint:           'Debug Endpoint Exposed',
+  directory_listing:        'Directory Listing',
+  source_map_exposed:       'Source Map Exposed',
+  tls_expiry:               'TLS Certificate Expiry',
+  prototype_pollution:      'Prototype Pollution',
+};
+
+let allFindings = [];
+let currentFilter = 'all';
+
+function renderFindings(findings) {
+  const el = document.getElementById('findings-list');
+  if (!findings.length) {
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">// no findings match this filter</div>
+        <p>V1B3 is scanning. Check back soon.</p>
+      </div>`;
+    return;
   }
 
-  fetch('findings.json?t=' + Date.now())
-    .then(r => r.json())
-    .then(data => {
-      animateCount(document.getElementById('stat-scanned'), data.stats.scanned);
-      animateCount(document.getElementById('stat-found'), data.stats.found);
-      animateCount(document.getElementById('stat-resolved'), data.stats.resolved);
+  el.innerHTML = findings.map(f => {
+    const sev = (f.severity || 'info').toLowerCase();
+    const cfg = SEV_CONFIG[sev] || SEV_CONFIG.info;
+    const typeLabel = TYPE_LABELS[f.type] || f.type;
+    const statusClass = f.status === 'resolved' ? 'resolved' : f.notified ? 'notified' : 'pending';
+    const statusLabel = f.status === 'resolved' ? '✓ RESOLVED' : f.notified ? '⏳ NOTIFIED' : '⚠ PENDING';
 
-      const container = document.getElementById('findings-list');
-      if (!data.findings.length) {
-        container.innerHTML = '<p style="color:var(--text-muted)">// no findings yet. scanning...</p>';
-        return;
-      }
-      container.innerHTML = data.findings.map(f => {
-        const cls = f.severity === 'critical' ? 'critical' : f.severity === 'medium' ? 'medium' : '';
-        const badge = f.status === 'resolved' ? 'resolved' : f.status === 'notified' ? 'notified' : 'pending';
-        const badgeText = f.status === 'resolved' ? 'Resolved' : f.status === 'notified' ? 'Notified' : 'Pending';
-        const disc = f.disclosure_url ? ` · <a href="${f.disclosure_url}" target="_blank">disclosure →</a>` : '';
-        const fix = f.days_to_fix ? ` · fixed in ${f.days_to_fix}d` : '';
-        return `<div class="finding-card ${cls}">
-          <div class="finding-header">
-            <span class="finding-title">#${f.id} — ${f.title}</span>
-            <span class="badge ${badge}">${badgeText}</span>
+    const evidenceBlock = f.evidence ? `
+      <div class="finding-evidence">
+        <div class="evidence-label">// raw evidence</div>
+        <pre><code>${escHtml(f.evidence)}</code></pre>
+      </div>` : '';
+
+    const curlBlock = f.curl ? `
+      <div class="finding-curl">
+        <div class="evidence-label">// reproduce</div>
+        <pre><code>$ ${escHtml(f.curl)}</code></pre>
+      </div>` : '';
+
+    const secretsBlock = f.secrets && f.secrets.length ? `
+      <div class="finding-secrets">
+        <div class="evidence-label">// secret types detected (values redacted)</div>
+        ${f.secrets.map(s => `<div class="secret-tag">${escHtml(s.type)}</div>`).join('')}
+      </div>` : '';
+
+    return `
+      <div class="finding-card-v2 sev-${sev}" data-sev="${sev}">
+        <div class="finding-top">
+          <div class="finding-left">
+            <div class="finding-type-row">
+              <span class="sev-badge sev-badge-${sev}">${cfg.icon} ${cfg.label}</span>
+              <span class="type-badge">${typeLabel}</span>
+            </div>
+            <div class="finding-title-v2">${escHtml(f.title)}</div>
+            <div class="finding-url-v2">→ <a href="${escHtml(f.url)}" target="_blank" rel="noopener">${escHtml(f.url)}</a></div>
           </div>
-          <div class="finding-desc">${f.description}</div>
-          <div class="finding-meta">${f.date} · ${f.severity} · ${f.type}${fix}${disc}</div>
-        </div>`;
-      }).join('');
-    }).catch(() => {
-      document.getElementById('findings-list').innerHTML = '<p style="color:var(--text-muted)">// error loading findings.</p>';
-    });
+          <div class="finding-right">
+            <div class="status-badge ${statusClass}">${statusLabel}</div>
+            <div class="finding-meta-v2">
+              <div>id: #${escHtml(f.id)}</div>
+              <div>date: ${escHtml(f.date)}</div>
+              ${f.days_to_fix ? `<div>fixed in: ${f.days_to_fix}d</div>` : ''}
+            </div>
+          </div>
+        </div>
+
+        <div class="finding-detail-text">${escHtml(f.detail || f.description || '')}</div>
+
+        ${evidenceBlock}
+        ${curlBlock}
+        ${secretsBlock}
+      </div>`;
+  }).join('');
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function applyFilter(sev) {
+  currentFilter = sev;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.sev === sev);
+  });
+  const filtered = sev === 'all'
+    ? allFindings
+    : allFindings.filter(f => (f.severity || '').toLowerCase() === sev);
+  renderFindings(filtered);
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => applyFilter(btn.dataset.sev));
+});
+
+fetch('findings.json?t=' + Date.now())
+  .then(r => r.json())
+  .then(d => {
+    const stats = d.stats || {};
+    document.getElementById('stat-scanned').textContent = stats.scanned ?? '—';
+    document.getElementById('stat-found').textContent = stats.found ?? '—';
+    document.getElementById('stat-resolved').textContent = stats.resolved ?? '—';
+    const pending = (stats.found ?? 0) - (stats.resolved ?? 0);
+    document.getElementById('stat-pending').textContent = pending >= 0 ? pending : '—';
+
+    allFindings = d.findings || [];
+    applyFilter(currentFilter);
+  })
+  .catch(err => {
+    document.getElementById('findings-list').innerHTML =
+      `<div class="empty-state">// could not load findings.json<br><small>${err}</small></div>`;
+  });
 </script>
 </body>
 </html>

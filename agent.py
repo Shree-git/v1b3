@@ -58,47 +58,76 @@ def cmd_scan(url):
     if result.stderr:
         print(result.stderr)
 
-    # Try to parse findings from scan output (scan.py prints JSON at end)
-    lines = result.stdout.strip().split("\n")
-    json_start = next((i for i, l in enumerate(lines) if l.strip().startswith("[")), None)
-    if json_start is not None:
-        try:
-            raw = json.loads("\n".join(lines[json_start:]))
-            if raw:
-                data = load_findings()
-                for r in raw:
-                    fid = next_id(data["findings"])
-                    finding = {
-                        "id": fid,
-                        "date": datetime.now().strftime("%Y-%m-%d"),
-                        "title": f"{r.get('type', 'Finding').replace('_', ' ').title()} at {r.get('path', url)}",
-                        "severity": "critical" if r.get("secrets") else "medium",
-                        "type": r.get("type", "unknown"),
-                        "description": f"Found at {r['url']}. " + (
-                            "Secrets detected: " + ", ".join(s["type"] for s in r["secrets"]) if r.get("secrets") else "Exposed path accessible."
-                        ),
-                        "status": "pending",
-                        "notified": False,
-                        "days_to_fix": None
-                    }
-                    data["findings"].insert(0, finding)
-                    data["stats"]["found"] += 1
-                    log.info(f"New finding added: [{fid}] {finding['title']}")
-                data["stats"]["scanned"] += 1
-                save_findings(data)
-                log.info(f"Scan complete. {len(raw)} finding(s) saved.")
-            else:
-                data = load_findings()
-                data["stats"]["scanned"] += 1
-                save_findings(data)
-                log.info("Scan complete. No findings.")
-        except json.JSONDecodeError:
-            log.info("Scan complete. Could not parse findings JSON.")
+    # Try to parse findings from scan output (scan.py --json flag at end)
+    # Run again with --json flag to get clean JSON
+    result_json = subprocess.run(
+        [sys.executable, "scan.py", url, "--json"],
+        capture_output=True, text=True
+    )
+    raw = []
+    try:
+        raw = json.loads(result_json.stdout.strip())
+    except (json.JSONDecodeError, ValueError):
+        pass
+
+    data = load_findings()
+    actionable = [r for r in raw if r.get("severity") in ("CRITICAL", "HIGH", "MEDIUM")]
+    for r in actionable:
+        fid = next_id(data["findings"])
+        sev = r.get("severity", "MEDIUM").lower()
+        finding_type = r.get("type", "unknown")
+
+        # Build human-readable title
+        type_labels = {
+            "exposed_path": f"Exposed path: {r.get('path', '')}",
+            "js_bundle_secret": f"Secret in JS bundle",
+            "inline_page_secret": "Secret in page HTML",
+            "cors_misconfiguration": "CORS misconfiguration",
+            "graphql_introspection": f"GraphQL introspection open: {r.get('endpoint', '')}",
+            "missing_security_header": f"Missing header: {r.get('header', '')}",
+            "insecure_cookie": f"Insecure cookie: {r.get('cookie', '')}",
+            "debug_endpoint": f"Debug endpoint: {r.get('path', '')}",
+            "directory_listing": f"Directory listing: {r.get('url', '')}",
+            "source_map_exposed": "Source map exposed",
+            "tls_expiry": f"TLS expiry: {r.get('days_left', '?')} days",
+        }
+        title = type_labels.get(finding_type, finding_type.replace("_", " ").title())
+        title = f"{title} @ {r.get('url', url)}"
+
+        # Build description
+        desc_parts = [r.get("detail", "")]
+        if r.get("secrets"):
+            desc_parts.append("Secrets: " + ", ".join(s["type"] for s in r["secrets"]))
+        if r.get("curl"):
+            desc_parts.append(f"Reproduce: {r['curl']}")
+        desc = " | ".join(p for p in desc_parts if p)
+
+        finding = {
+            "id": fid,
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "title": title,
+            "severity": sev,
+            "type": finding_type,
+            "description": desc,
+            "detail": r.get("detail", ""),
+            "url": r.get("url", url),
+            "evidence": r.get("evidence", r.get("snippet", ""))[:600],
+            "curl": r.get("curl", ""),
+            "secrets": r.get("secrets", []),
+            "status": "pending",
+            "notified": False,
+            "days_to_fix": None,
+        }
+        data["findings"].insert(0, finding)
+        data["stats"]["found"] += 1
+        log.info(f"New finding [{fid}] [{sev.upper()}] {title}")
+
+    data["stats"]["scanned"] += 1
+    save_findings(data)
+    if actionable:
+        log.info(f"Scan complete. {len(actionable)} actionable finding(s) saved.")
     else:
-        data = load_findings()
-        data["stats"]["scanned"] += 1
-        save_findings(data)
-        log.info("Scan complete. No findings.")
+        log.info("Scan complete. No actionable findings.")
 
 def cmd_update_site():
     log.info("Pushing updated findings to GitHub...")
